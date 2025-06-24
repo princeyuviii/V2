@@ -14,6 +14,11 @@ detector = PoseDetector()
 shirtFolderPath = "Resources/Shirts"
 listShirts = os.listdir(shirtFolderPath)
 
+pantFolderPath = "Resources/Pants"
+listPants = os.listdir(pantFolderPath)
+pantNumber = 1
+
+
 imageNumber = 0
 
 # Load button images safely
@@ -58,11 +63,14 @@ while True:
 
         top_y = int(min(lm11[1], lm12[1]))
         bottom_y = int(max(lm23[1], lm24[1]))
-        left_x = int(min(lm11[0], lm23[0]))
-        right_x = int(max(lm12[0], lm24[0]))
+        left_x = int(min(lm11[0], lm12[0], lm23[0], lm24[0]))
+        right_x = int(max(lm11[0], lm12[0], lm23[0], lm24[0]))
 
         shirt_width = right_x - left_x
         shirt_height = bottom_y - top_y
+
+        print(f"🧭 Shirt box: Left {left_x}, Right {right_x}, Top {top_y}, Bottom {bottom_y}")
+        print(f"📏 Shirt width: {shirt_width}, height: {shirt_height}")
 
         if shirt_width > 0 and shirt_height > 0:
             imgShirt = cv2.resize(imgShirt, (shirt_width, shirt_height))
@@ -78,12 +86,45 @@ while True:
                     imgShirt = imgShirt[:, :shirt_width, :]
 
                 img = cvzone.overlayPNG(img, imgShirt, (left_x, top_y))
-
             except Exception as e:
                 print("⚠️ Shirt overlay failed:", e)
         else:
             print("⚠️ Invalid dimensions for shirt overlay.")
+        if(len(lmList) > 24):
+            try:
+                pantImg = cv2.imread(os.path.join(pantFolderPath, listPants[pantNumber]), cv2.IMREAD_UNCHANGED)
+                if pantImg is None:
+                    print("❌ Pant image could not be loaded.")
+                else:
+                    print("📦 Pant image loaded successfully.")
 
+                    hip_top_y = int((lm23[1] + lm24[1]) / 2)
+                    pant_height = int(np.linalg.norm(np.array(lm11) - np.array(lm12)) * 2.2)
+
+                    pant_left_x = int(min(lm23[0], lm24[0]) - 10)
+                    pant_right_x = int(max(lm23[0], lm24[0]) + 10)
+                    pant_width = pant_right_x - pant_left_x
+
+                    print(f"📏 Pant overlay at ({pant_left_x}, {hip_top_y}) size: ({pant_width}, {pant_height})")
+
+                    if pant_width > 0 and pant_height > 0:
+                        pantImg = cv2.resize(pantImg, (pant_width, pant_height))
+
+                        if hip_top_y + pant_height > frame_h:
+                            pant_height = frame_h - hip_top_y
+                            pantImg = pantImg[:pant_height, :, :]
+
+                        if pant_right_x > frame_w:
+                            pant_width = frame_w - pant_left_x
+                            pantImg = pantImg[:, :pant_width, :]
+
+                        img = cvzone.overlayPNG(img, pantImg, (pant_left_x, hip_top_y))
+                    else:
+                        print("⚠️ Invalid pant dimensions.")
+            except Exception as e:
+                print("⚠️ Pants overlay failed:", e)
+        else:
+            print("⚠️ Not enough landmarks detected for pants overlay.")
         # Overlay navigation buttons
         img = cvzone.overlayPNG(img, imgButtonRight, (right_x_btn, y_btn))
         img = cvzone.overlayPNG(img, imgButtonLeft, (left_x_btn, y_btn))
