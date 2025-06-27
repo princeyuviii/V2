@@ -90,7 +90,7 @@ while True:
                 print("⚠️ Shirt overlay failed:", e)
         else:
             print("⚠️ Invalid dimensions for shirt overlay.")
-        if(len(lmList) > 24):
+        if(len(lmList) < 24):
             try:
                 pantImg = cv2.imread(os.path.join(pantFolderPath, listPants[pantNumber]), cv2.IMREAD_UNCHANGED)
                 if pantImg is None:
